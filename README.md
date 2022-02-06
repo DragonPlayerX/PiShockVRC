@@ -19,4 +19,4 @@ This mod comes with a UnityPackage that allows you to put "PiShockPoints" on you
 3. Open the ZIP file and move the **PiShockVRC.dll** to your **"VRChat/Mods"** folder
 4. Start your game to generate all files/settings
 5. Insert your PiShock Username and ApiKey (and other settings) to the mod configuration. It's accessible in **"VRChat/UserData/MelonPreferences.cfg"** or otherwise I recommend ingame modification with [UIExpansionKit](https://github.com/knah/VRCMods/releases/latest/download/UIExpansionKit.dll)
-6. Follow the instructions given in the **"PiShockUnityInstructions.pdf"** which included in the download to prepare your avatar
+6. Follow the instructions given in the **"PiShockUnityInstructions.pdf"** which is included in the download to prepare your avatar
