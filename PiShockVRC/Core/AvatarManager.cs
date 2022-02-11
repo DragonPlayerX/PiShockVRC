@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using VRC;
@@ -18,6 +21,7 @@ namespace PiShockVRC.Core
         private static readonly List<PiShockDevice> Devices = new List<PiShockDevice>();
         private static readonly HttpClient WebHandler = new HttpClient();
 
+        private static ClientWebSocket WebSocketClient = new ClientWebSocket();
         private static float elapsedTime = 0f;
 
         public static void Init()
@@ -40,12 +44,64 @@ namespace PiShockVRC.Core
 
             Task.Run(async () =>
             {
-                await WebHandler.PostAsync(PiShockApi, new StringContent(request, System.Text.Encoding.UTF8, "application/json"));
+                await WebHandler.PostAsync(PiShockApi, new StringContent(request, Encoding.UTF8, "application/json"));
             }).ContinueWith(t =>
             {
                 if (t.IsFaulted)
                     PiShockVRCMod.Logger.Error("Task raised exception: " + t.Exception);
             });
+        }
+
+        private static void SendLocalRequest(PiShockDevice device, PiShockPoint point)
+        {
+            string request = (int)point.Type + ","
+                + point.Strength + ","
+                + point.Duration + ","
+                + Configuration.LocalPiShockId.Value + ","
+                + device.Link.DeviceId;
+
+            if (Configuration.LogApiRequests.Value)
+                PiShockVRCMod.Logger.Msg("[PiShock Local] Sending => " + request);
+
+            CancellationTokenSource cts = new CancellationTokenSource(5000);
+            Task.Run(async () =>
+            {
+                if (WebSocketClient.State == WebSocketState.Open)
+                {
+                    if (await SendWebSocketMessageAsync(request, cts))
+                        return;
+
+                    cts.Dispose();
+                    cts = new CancellationTokenSource(5000);
+                }
+
+                WebSocketClient.Dispose();
+                WebSocketClient = new ClientWebSocket();
+
+                Task task = WebSocketClient.ConnectAsync(new Uri("ws://" + Configuration.LocalAddress.Value + ":8000"), cts.Token);
+                while (!(task.IsCompleted || cts.IsCancellationRequested))
+                    await Task.Delay(100);
+
+                cts.Dispose();
+                cts = new CancellationTokenSource(5000);
+
+                if (WebSocketClient.State == WebSocketState.Open)
+                    await SendWebSocketMessageAsync(request, cts);
+
+            }).ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                    PiShockVRCMod.Logger.Error("Task raised exception: " + t.Exception);
+            });
+        }
+
+        private static async Task<bool> SendWebSocketMessageAsync(string message, CancellationTokenSource cts)
+        {
+            Task task = WebSocketClient.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(message)), WebSocketMessageType.Text, true, cts.Token);
+            while (!(task.IsCompleted || cts.IsCancellationRequested))
+                await Task.Delay(100);
+
+            return !(task.IsFaulted || task.IsCanceled);
         }
 
         private static void OnAvatarReady(VRCAvatarManager avatarManager, ApiAvatar apiAvatar, GameObject gameObject)
@@ -97,7 +153,7 @@ namespace PiShockVRC.Core
 
                     foreach (PiShockPoint point in device.Points)
                     {
-                        if (point.Object == null || !point.Object.activeSelf)
+                        if (point.Object == null || !point.Object.activeInHierarchy)
                             continue;
 
                         List<float> distances = new List<float>();
@@ -116,7 +172,10 @@ namespace PiShockVRC.Core
                         if (distances.Any(distance => distance <= activationDistance))
                         {
                             device.NextValidShock = Time.realtimeSinceStartup + point.Duration;
-                            SendAPIRequest(device, point, player?.field_Private_APIUser_0?.displayName ?? "Invalid Name");
+                            if (Configuration.UseLocalServer.Value)
+                                SendLocalRequest(device, point);
+                            else
+                                SendAPIRequest(device, point, player?.field_Private_APIUser_0?.displayName ?? "Invalid Name");
                             break;
                         }
                     }
@@ -137,9 +196,9 @@ namespace PiShockVRC.Core
                 {
                     if (Configuration.DeviceLinks.TryGetValue(identifier, out PiShockDevice.LinkData linkData))
                     {
-                        if (string.IsNullOrEmpty(linkData.ShareCode))
+                        if (string.IsNullOrEmpty(linkData.ShareCode) && linkData.DeviceId < 0)
                         {
-                            PiShockVRCMod.Logger.Warning("Found PiShock device without an assigned share code [Identifier=" + identifier + "]. The device wont work.");
+                            PiShockVRCMod.Logger.Warning("Found PiShock device without an assigned share code or local id [Identifier=" + identifier + "]. The device wont work.");
                         }
                         else
                         {
@@ -152,7 +211,7 @@ namespace PiShockVRC.Core
                     {
                         Configuration.DeviceLinks.Add(identifier, new PiShockDevice.LinkData() { ShareCode = "", DeviceId = -1 });
                         Configuration.Save();
-                        PiShockVRCMod.Logger.Msg("Found new PiShock device [Identifier=" + identifier + "]. Please assign a share code via the configuration file.");
+                        PiShockVRCMod.Logger.Msg("Found new PiShock device [Identifier=" + identifier + "]. Please assign a share code or local id in the configuration file.");
                     }
                 }
 

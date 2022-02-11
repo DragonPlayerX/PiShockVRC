@@ -13,12 +13,15 @@ namespace PiShockVRC.Config
     {
         private static readonly MelonPreferences_Category Category = MelonPreferences.CreateCategory("PiShockVRC", "PiShockVRC");
 
-        private static readonly string ShareCodesFile = "DeviceLinks.cfg";
+        private static readonly string DeviceLinksFile = "DeviceLinks.cfg";
         private static readonly string DataDirectory = "UserData\\PiShockVRC\\";
 
         public static MelonPreferences_Entry<bool> Enabled;
         public static MelonPreferences_Entry<string> Username;
         public static MelonPreferences_Entry<string> ApiKey;
+        public static MelonPreferences_Entry<bool> UseLocalServer;
+        public static MelonPreferences_Entry<string> LocalAddress;
+        public static MelonPreferences_Entry<int> LocalPiShockId;
         public static MelonPreferences_Entry<bool> SelfInteraction;
         public static MelonPreferences_Entry<bool> FeetInteraction;
         public static MelonPreferences_Entry<bool> FriendsOnly;
@@ -36,6 +39,9 @@ namespace PiShockVRC.Config
             Enabled = CreateEntry("Enabled", true, "Enabled");
             Username = CreateEntry("Username", "name", "Username");
             ApiKey = CreateEntry("ApiKey", "key", "ApiKey");
+            UseLocalServer = CreateEntry("UseLocalServer", false, "Use Local Server");
+            LocalAddress = CreateEntry("LocalAddress", "127.0.0.1", "Local Address");
+            LocalPiShockId = CreateEntry("LocalPiShockId", -1, "Local PiShock ID");
             SelfInteraction = CreateEntry("SelfInteraction", false, "Self Interaction");
             FeetInteraction = CreateEntry("FeetInteraction", false, "Feet Interaction");
             FriendsOnly = CreateEntry("FriendsOnly", false, "Friends Only");
@@ -47,10 +53,10 @@ namespace PiShockVRC.Config
             if (!Directory.Exists(DataDirectory))
                 Directory.CreateDirectory(DataDirectory);
 
-            if (File.Exists(DataDirectory + ShareCodesFile))
-                DeviceLinks = Decoder.Decode(File.ReadAllText(DataDirectory + ShareCodesFile)).Make<Dictionary<string, PiShockDevice.LinkData>>();
+            if (File.Exists(DataDirectory + DeviceLinksFile))
+                DeviceLinks = Decoder.Decode(File.ReadAllText(DataDirectory + DeviceLinksFile)).Make<Dictionary<string, PiShockDevice.LinkData>>();
 
-            fileWatcher = new FileSystemWatcher(DataDirectory, ShareCodesFile)
+            fileWatcher = new FileSystemWatcher(DataDirectory, DeviceLinksFile)
             {
                 NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite,
                 EnableRaisingEvents = true
@@ -69,7 +75,7 @@ namespace PiShockVRC.Config
                 HasChanged = false;
             }
 
-            File.WriteAllText(DataDirectory + ShareCodesFile, Encoder.Encode(DeviceLinks, EncodeOptions.PrettyPrint | EncodeOptions.NoTypeHints));
+            File.WriteAllText(DataDirectory + DeviceLinksFile, Encoder.Encode(DeviceLinks, EncodeOptions.PrettyPrint | EncodeOptions.NoTypeHints));
         }
 
         private static MelonPreferences_Entry<T> CreateEntry<T>(string name, T defaultValue, string displayname, string description = null)
@@ -81,7 +87,7 @@ namespace PiShockVRC.Config
 
         private static void OnFileSystemWatcherTriggered(object source, FileSystemEventArgs e)
         {
-            DeviceLinks = Decoder.Decode(File.ReadAllText(DataDirectory + ShareCodesFile)).Make<Dictionary<string, PiShockDevice.LinkData>>();
+            DeviceLinks = Decoder.Decode(File.ReadAllText(DataDirectory + DeviceLinksFile)).Make<Dictionary<string, PiShockDevice.LinkData>>();
             int invalidCodes = DeviceLinks.Values.Where(x => string.IsNullOrEmpty(x.ShareCode.Trim())).Count();
             int invalidIds = DeviceLinks.Values.Where(x => x.DeviceId < 0).Count();
             PiShockVRCMod.Logger.Msg("Reloaded link data configuration file.");
