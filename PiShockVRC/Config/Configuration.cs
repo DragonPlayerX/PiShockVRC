@@ -25,6 +25,7 @@ namespace PiShockVRC.Config
         public static MelonPreferences_Entry<bool> SelfInteraction;
         public static MelonPreferences_Entry<bool> FeetInteraction;
         public static MelonPreferences_Entry<bool> FriendsOnly;
+        public static MelonPreferences_Entry<bool> UseAvatarParameters;
         public static MelonPreferences_Entry<float> DefaultRadius;
         public static MelonPreferences_Entry<bool> LogApiRequests;
 
@@ -45,6 +46,7 @@ namespace PiShockVRC.Config
             SelfInteraction = CreateEntry("SelfInteraction", false, "Self Interaction");
             FeetInteraction = CreateEntry("FeetInteraction", false, "Feet Interaction");
             FriendsOnly = CreateEntry("FriendsOnly", false, "Friends Only");
+            UseAvatarParameters = CreateEntry("UseAvatarParameters", false, "Use Avatar Parameters");
             DefaultRadius = CreateEntry("DefaultRadius", 0.15f, "Default Radius");
             LogApiRequests = CreateEntry("LogApiRequests", false, "Log API Requests");
 

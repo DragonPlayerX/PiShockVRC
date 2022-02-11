@@ -172,10 +172,17 @@ namespace PiShockVRC.Core
                         if (distances.Any(distance => distance <= activationDistance))
                         {
                             device.NextValidShock = Time.realtimeSinceStartup + point.Duration;
+
                             if (Configuration.UseLocalServer.Value)
                                 SendLocalRequest(device, point);
                             else
                                 SendAPIRequest(device, point, player?.field_Private_APIUser_0?.displayName ?? "Invalid Name");
+
+                            if (Configuration.UseAvatarParameters.Value)
+                            {
+                                ParameterController.SetParameter("PiShock_" + device.Name, true);
+                                PiShockVRCMod.Run(() => ParameterController.SetParameter("PiShock_" + device.Name, false), point.Duration);
+                            }
                             break;
                         }
                     }

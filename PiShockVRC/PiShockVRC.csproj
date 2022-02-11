@@ -45,6 +45,9 @@
 		<Reference Include="VRCCore-Standalone">
 			<HintPath>..\Libs\VRCCore-Standalone.dll</HintPath>
 		</Reference>
+		<Reference Include="VRCSDK3A">
+			<HintPath>..\Libs\VRCSDK3A.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 
 </Project>
