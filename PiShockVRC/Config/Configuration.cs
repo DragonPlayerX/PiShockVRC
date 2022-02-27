@@ -50,8 +50,6 @@ namespace PiShockVRC.Config
             DefaultRadius = CreateEntry("DefaultRadius", 0.15f, "Default Radius");
             LogApiRequests = CreateEntry("LogApiRequests", false, "Log API Requests");
 
-            Category.SaveToFile(false);
-
             if (!Directory.Exists(DataDirectory))
                 Directory.CreateDirectory(DataDirectory);
 
