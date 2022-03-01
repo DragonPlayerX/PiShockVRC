@@ -136,7 +136,7 @@ namespace PiShockVRC.Core
                     || (!player.field_Private_APIUser_0.id.Equals(APIUser.CurrentUser.id) && Configuration.FriendsOnly.Value && !player.field_Private_APIUser_0.isFriend))
                     continue;
 
-                Animator animator = player.Method_Internal_VRCPlayer_0()?.field_Internal_Animator_0;
+                Animator animator = player.prop_VRCPlayer_0?.field_Internal_Animator_0;
 
                 if (animator == null || !animator.isHuman)
                     continue;
