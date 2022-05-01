@@ -8,6 +8,12 @@
 
 - [MelonLoader 0.5.3+](https://melonwiki.xyz/)
 
+## Planned Features
+- Using normal bones as triggers
+- Physbone interaction as triggers
+
+*These features may be implemented in future versions*
+
 ## Description
 
 This mod comes with a UnityPackage that allows you to put "PiShockPoints" on your VRChat avatar which will trigger your PiShock device through their API when other people touch it. It supports all kind of modification like type, strength, duration and touch radius.
