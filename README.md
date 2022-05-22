@@ -9,10 +9,7 @@
 - [MelonLoader 0.5.3+](https://melonwiki.xyz/)
 
 ## Planned Features
-- Using normal bones as triggers
-- Physbone interaction as triggers
-
-*These features may be implemented in future versions*
+- Future versions will have support for VRChat Avatar Dynamics (Contact Receiver)
 
 ## Description
 
