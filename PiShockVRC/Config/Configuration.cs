@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using MelonLoader;
+using MelonLoader.Preferences;
 using MelonLoader.TinyJSON;
 
 using PiShockVRC.Core;
@@ -33,6 +34,7 @@ namespace PiShockVRC.Config
         public static MelonPreferences_Entry<int> DefaultDuration;
         public static MelonPreferences_Entry<float> DefaultRadius;
         public static MelonPreferences_Entry<bool> LogApiRequests;
+        public static MelonPreferences_Entry<int> UpdateRate;
 
         public static Dictionary<string, PiShockDevice.LinkData> DeviceLinks = new Dictionary<string, PiShockDevice.LinkData>();
         public static PiShockPoint.PointType ParsedDefaultType;
@@ -58,6 +60,7 @@ namespace PiShockVRC.Config
             DefaultDuration = CreateEntry("DefaultDuration", 1, "Default Duration");
             DefaultRadius = CreateEntry("DefaultRadius", 0.25f, "Default Radius");
             LogApiRequests = CreateEntry("LogApiRequests", false, "Log API Requests");
+            UpdateRate = CreateEntry("UpdateRate", 10, "Update Rate (per second)", valueValidator: new IntegerValidator(10, 1, 60));
 
             Action<string> parseTypeAction = new Action<string>(value =>
             {
@@ -99,9 +102,9 @@ namespace PiShockVRC.Config
             File.WriteAllText(DataDirectory + DeviceLinksFile, Encoder.Encode(DeviceLinks, EncodeOptions.PrettyPrint | EncodeOptions.NoTypeHints));
         }
 
-        private static MelonPreferences_Entry<T> CreateEntry<T>(string name, T defaultValue, string displayname, string description = null)
+        private static MelonPreferences_Entry<T> CreateEntry<T>(string name, T defaultValue, string displayname, string description = null, ValueValidator valueValidator = null)
         {
-            MelonPreferences_Entry<T> entry = Category.CreateEntry<T>(name, defaultValue, displayname, description);
+            MelonPreferences_Entry<T> entry = Category.CreateEntry<T>(name, defaultValue, displayname, description, validator: valueValidator);
             entry.OnValueChangedUntyped += new Action(() => HasChanged = true);
             return entry;
         }
@@ -115,6 +118,34 @@ namespace PiShockVRC.Config
             PiShockVRCMod.Logger.Msg("Loaded " + DeviceLinks.Count + " devices.");
             PiShockVRCMod.Logger.Msg("Found " + invalidCodes + " unassigned share codes.");
             PiShockVRCMod.Logger.Msg("Found " + invalidIds + " unassigned device ids.");
+        }
+
+        private class IntegerValidator : ValueValidator
+        {
+            public int DefaultValue;
+            public int MinValue;
+            public int MaxValue;
+
+            public IntegerValidator(int defaultValue, int minValue, int maxValue)
+            {
+                DefaultValue = defaultValue;
+                MinValue = minValue;
+                MaxValue = maxValue;
+            }
+
+            public override object EnsureValid(object value)
+            {
+                if (IsValid(value))
+                    return value;
+                else
+                    return DefaultValue;
+            }
+
+            public override bool IsValid(object value)
+            {
+                int v = Convert.ToInt32(value);
+                return v >= MinValue && v <= MaxValue;
+            }
         }
 
         internal class UIXIntegration

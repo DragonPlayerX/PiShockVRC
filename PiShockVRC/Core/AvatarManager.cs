@@ -17,7 +17,6 @@ namespace PiShockVRC.Core
 {
     public static class AvatarManager
     {
-        private static readonly float FixedUpdateRate = 0.1f;
         private static readonly string PiShockApi = "https://do.pishock.com/api/apioperate";
         private static readonly List<PiShockDevice> Devices = new List<PiShockDevice>();
         private static readonly HttpClient WebHandler = new HttpClient();
@@ -122,7 +121,7 @@ namespace PiShockVRC.Core
         public static void Update()
         {
             elapsedTime += Time.deltaTime;
-            if (elapsedTime < FixedUpdateRate)
+            if (elapsedTime < (1f / Configuration.UpdateRate.Value))
                 return;
             else
                 elapsedTime = 0;
