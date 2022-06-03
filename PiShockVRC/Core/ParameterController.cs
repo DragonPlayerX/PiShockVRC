@@ -17,8 +17,7 @@ namespace PiShockVRC.Core
             try
             {
                 SetParameterMethod = typeof(AvatarPlayableController).GetMethods().First(method => method.Name.StartsWith("Method_Private_Boolean_Int32_Single")
-                    && !method.Name.Contains("PDM")
-                    && XrefScanner.UsedBy(method).Any(instance => instance.Type == XrefType.Method && instance.TryResolve()?.DeclaringType == typeof(AvatarPlayableController)));
+                    && XrefScanner.XrefScan(method).Any(instance => instance.Type == XrefType.Method && instance.TryResolve()?.DeclaringType == typeof(AvatarPlayableController)));
             }
             catch (Exception)
             {
