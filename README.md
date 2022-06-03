@@ -6,10 +6,7 @@
 
 ## Requirements
 
-- [MelonLoader 0.5.3+](https://melonwiki.xyz/)
-
-## Planned Features
-- Future versions will have support for VRChat Avatar Dynamics (Contact Receiver)
+- [MelonLoader 0.5.4+](https://melonwiki.xyz/)
 
 ## Description
 
@@ -17,7 +14,7 @@ This mod comes with a UnityPackage that allows you to put "PiShockPoints" on you
 
 ## Installation
 
-1. Download and install [MelonLoader 0.5.3+](https://melonwiki.xyz/)
+1. Download and install [MelonLoader 0.5.4+](https://melonwiki.xyz/)
 2. Download the ZIP file of [PiShockVRC](https://github.com/DragonPlayerX/PiShockVRC/releases/latest)
 3. Open the ZIP file and move the **PiShockVRC.dll** to your **"VRChat/Mods"** folder
 4. Start your game to generate all files/settings
@@ -33,6 +30,10 @@ This mod comes with a UnityPackage that allows you to put "PiShockPoints" on you
 |Local Address|This is the IP address of your PiShock|Local WebSocket|
 |Local PiShock ID|This is the ID of your PiShock account|Local WebSocket|
 
+## Avatar Dynamics
+
+You can enable the Avatar Dynamics mode of the mod in the config. If you do that, the config entries for "Self Interaction", "Feet Interaction", "Friends Only" and "Default Radius" will be unavailable. In this case these settings have to be changed on the VRC Contact Receiver which is located on the PiShockPoint object.
+
 ## Avatar Parameters
 
 You can enable the function “Use Avatar Parameters” with [UIExpansionKit](https://github.com/knah/VRCMods/releases/latest/download/UIExpansionKit.dll) or in the [MelonLoader](https://melonwiki.xyz/) preferences file. With this enabled, it will set an avatar parameter (bool type) to true for the given duration when your device gets touched. You can have a parameter for each device.
@@ -41,4 +42,4 @@ Parameter name is defined as the following: **PiShock_{device}**
 
 **Example Parameters:**
 <br>
-![Test](https://i.imgur.com/myWVlDf.png)
+![ParameterExample](https://i.imgur.com/myWVlDf.png)
