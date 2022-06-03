@@ -24,11 +24,11 @@ namespace PiShockVRC.Config
         public static MelonPreferences_Entry<bool> UseLocalServer;
         public static MelonPreferences_Entry<string> LocalAddress;
         public static MelonPreferences_Entry<int> LocalPiShockId;
+        public static MelonPreferences_Entry<bool> UseAvatarDynamics;
         public static MelonPreferences_Entry<bool> SelfInteraction;
         public static MelonPreferences_Entry<bool> FeetInteraction;
         public static MelonPreferences_Entry<bool> FriendsOnly;
         public static MelonPreferences_Entry<bool> UseAvatarParameters;
-        public static MelonPreferences_Entry<bool> UseAvatarDynamics;
         public static MelonPreferences_Entry<string> DefaultType;
         public static MelonPreferences_Entry<int> DefaultStrength;
         public static MelonPreferences_Entry<int> DefaultDuration;
@@ -50,11 +50,11 @@ namespace PiShockVRC.Config
             UseLocalServer = CreateEntry("UseLocalServer", false, "Use Local Server");
             LocalAddress = CreateEntry("LocalAddress", "127.0.0.1", "Local Address");
             LocalPiShockId = CreateEntry("LocalPiShockId", -1, "Local PiShock ID");
+            UseAvatarDynamics = CreateEntry("UseAvatarDynamics", false, "Use Avatar Dynamics");
             SelfInteraction = CreateEntry("SelfInteraction", false, "Self Interaction");
             FeetInteraction = CreateEntry("FeetInteraction", false, "Feet Interaction");
             FriendsOnly = CreateEntry("FriendsOnly", false, "Friends Only");
             UseAvatarParameters = CreateEntry("UseAvatarParameters", false, "Use Avatar Parameters");
-            UseAvatarDynamics = CreateEntry("UseAvatarDynamics", false, "Use Avatar Dynamics");
             DefaultType = CreateEntry("DefaultType", nameof(PiShockPoint.PointType.Shock), "Default Type");
             DefaultStrength = CreateEntry("DefaultStrength", 25, "Default Strength");
             DefaultDuration = CreateEntry("DefaultDuration", 1, "Default Duration");
@@ -159,6 +159,11 @@ namespace PiShockVRC.Config
                     (nameof(PiShockPoint.PointType.Vibrate), "Vibrate"),
                     (nameof(PiShockPoint.PointType.Beep), "Beep")
                 });
+
+                UseAvatarDynamics.OnValueChangedUntyped += UIExpansionKit.API.ExpansionKitApi.RegisterSettingsVisibilityCallback(Category.Identifier, SelfInteraction.Identifier, () => !UseAvatarDynamics.Value);
+                UseAvatarDynamics.OnValueChangedUntyped += UIExpansionKit.API.ExpansionKitApi.RegisterSettingsVisibilityCallback(Category.Identifier, FeetInteraction.Identifier, () => !UseAvatarDynamics.Value);
+                UseAvatarDynamics.OnValueChangedUntyped += UIExpansionKit.API.ExpansionKitApi.RegisterSettingsVisibilityCallback(Category.Identifier, FriendsOnly.Identifier, () => !UseAvatarDynamics.Value);
+                UseAvatarDynamics.OnValueChangedUntyped += UIExpansionKit.API.ExpansionKitApi.RegisterSettingsVisibilityCallback(Category.Identifier, DefaultRadius.Identifier, () => !UseAvatarDynamics.Value);
             }
         }
     }
