@@ -7,7 +7,7 @@ using PiShockVRC;
 using PiShockVRC.Core;
 using PiShockVRC.Config;
 
-[assembly: MelonInfo(typeof(PiShockVRCMod), "PiShockVRC", "1.1.2", "DragonPlayer", "https://github.com/DragonPlayerX/PiShockVRC")]
+[assembly: MelonInfo(typeof(PiShockVRCMod), "PiShockVRC", "1.2.0", "DragonPlayer", "https://github.com/DragonPlayerX/PiShockVRC")]
 [assembly: MelonGame("VRChat", "VRChat")]
 [assembly: MelonOptionalDependencies("UIExpansionKit")]
 
@@ -15,7 +15,7 @@ namespace PiShockVRC
 {
     public class PiShockVRCMod : MelonMod
     {
-        public static readonly string Version = "1.1.2";
+        public static readonly string Version = "1.2.0";
 
         public static PiShockVRCMod Instance;
         public static MelonLogger.Instance Logger => Instance.LoggerInstance;
