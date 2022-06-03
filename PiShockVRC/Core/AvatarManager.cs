@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using VRC;
 using VRC.Core;
+using VRC.SDK3.Dynamics.Contact.Components;
 
 using PiShockVRC.Config;
 
@@ -35,9 +36,9 @@ namespace PiShockVRC.Core
                     + "\",\"Apikey\":\"" + Configuration.ApiKey.Value
                     + "\",\"Name\":\"" + "[VRChat] " + user
                     + "\",\"Code\":\"" + device.Link.ShareCode
-                    + "\",\"Intensity\":\"" + point.Strength
-                    + "\",\"Duration\":\"" + point.Duration
-                    + "\",\"Op\":\"" + (int)point.Type + "\"}";
+                    + "\",\"Intensity\":\"" + (point.Strength ?? Configuration.DefaultStrength.Value)
+                    + "\",\"Duration\":\"" + (point.Duration ?? Configuration.DefaultDuration.Value)
+                    + "\",\"Op\":\"" + (int)(point.Type ?? Configuration.ParsedDefaultType) + "\"}";
 
             if (Configuration.LogApiRequests.Value)
                 PiShockVRCMod.Logger.Msg("[PiShock API] Sending => " + request);
@@ -54,9 +55,9 @@ namespace PiShockVRC.Core
 
         private static void SendLocalRequest(PiShockDevice device, PiShockPoint point)
         {
-            string request = (int)point.Type + ","
-                + point.Strength + ","
-                + point.Duration + ","
+            string request = (int)(point.Type ?? Configuration.ParsedDefaultType) + ","
+                + (point.Strength ?? Configuration.DefaultStrength.Value) + ","
+                + (point.Duration ?? Configuration.DefaultDuration.Value) + ","
                 + Configuration.LocalPiShockId.Value + ","
                 + device.Link.DeviceId;
 
@@ -129,23 +130,8 @@ namespace PiShockVRC.Core
             if (!Configuration.Enabled.Value || Devices.Count == 0)
                 return;
 
-            foreach (Player player in PlayerManager.field_Private_Static_PlayerManager_0.field_Private_List_1_Player_0)
+            if (Configuration.UseAvatarDynamics.Value)
             {
-                if (player == null || player.field_Private_APIUser_0 == null
-                    || (!Configuration.SelfInteraction.Value && player.field_Private_APIUser_0.id.Equals(APIUser.CurrentUser.id))
-                    || (!player.field_Private_APIUser_0.id.Equals(APIUser.CurrentUser.id) && Configuration.FriendsOnly.Value && !player.field_Private_APIUser_0.isFriend))
-                    continue;
-
-                Animator animator = player.prop_VRCPlayer_0?.field_Internal_Animator_0;
-
-                if (animator == null || !animator.isHuman)
-                    continue;
-
-                Vector3 leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand)?.position ?? Vector3.positiveInfinity;
-                Vector3 rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand)?.position ?? Vector3.positiveInfinity;
-                Vector3 leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot)?.position ?? Vector3.positiveInfinity;
-                Vector3 rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot)?.position ?? Vector3.positiveInfinity;
-
                 foreach (PiShockDevice device in Devices)
                 {
                     if (device.NextValidShock >= Time.realtimeSinceStartup)
@@ -153,40 +139,88 @@ namespace PiShockVRC.Core
 
                     foreach (PiShockPoint point in device.Points)
                     {
-                        if (point.Object == null || !point.Object.activeInHierarchy)
+                        if (point.Object == null || !point.Object.activeInHierarchy || point.ContactReceiver == null)
                             continue;
 
-                        List<float> distances = new List<float>();
-
-                        distances.Add(Vector3.Distance(leftHand, point.Object?.transform.position ?? Vector3.positiveInfinity));
-                        distances.Add(Vector3.Distance(rightHand, point.Object?.transform.position ?? Vector3.positiveInfinity));
-
-                        if (Configuration.FeetInteraction.Value)
+                        if (point.ContactReceiver.IsColliding())
                         {
-                            distances.Add(Vector3.Distance(leftFoot, point.Object?.transform.position ?? Vector3.positiveInfinity));
-                            distances.Add(Vector3.Distance(rightFoot, point.Object?.transform.position ?? Vector3.positiveInfinity));
-                        }
+                            device.NextValidShock = Time.realtimeSinceStartup + (point.Duration ?? Configuration.DefaultDuration.Value);
+                            int? playerId = point.ContactReceiver.collisionRecords._size != 0 ? point.ContactReceiver.collisionRecords[0]?.trigger?.playerId : null;
 
-                        float activationDistance = point.Radius <= 0 ? Configuration.DefaultRadius.Value : point.Radius;
+                            Player player = playerId != null && PlayerManager.field_Private_Static_PlayerManager_0.field_Private_Dictionary_2_Int32_Player_0.ContainsKey(playerId.Value)
+                                ? PlayerManager.field_Private_Static_PlayerManager_0.field_Private_Dictionary_2_Int32_Player_0[playerId.Value] : null;
 
-                        if (distances.Any(distance => distance <= activationDistance))
-                        {
-                            device.NextValidShock = Time.realtimeSinceStartup + point.Duration;
-
-                            if (Configuration.UseLocalServer.Value)
-                                SendLocalRequest(device, point);
-                            else
-                                SendAPIRequest(device, point, player?.field_Private_APIUser_0?.displayName ?? "Invalid Name");
-
-                            if (Configuration.UseAvatarParameters.Value)
-                            {
-                                ParameterController.SetParameter("PiShock_" + device.Name, true);
-                                PiShockVRCMod.Run(() => ParameterController.SetParameter("PiShock_" + device.Name, false), point.Duration);
-                            }
+                            TriggerShock(device, point, player);
                             break;
                         }
                     }
                 }
+            }
+            else
+            {
+                foreach (Player player in PlayerManager.field_Private_Static_PlayerManager_0.field_Private_List_1_Player_0)
+                {
+                    if (player == null || player.field_Private_APIUser_0 == null
+                        || (!Configuration.SelfInteraction.Value && player.field_Private_APIUser_0.id.Equals(APIUser.CurrentUser.id))
+                        || (!player.field_Private_APIUser_0.id.Equals(APIUser.CurrentUser.id) && Configuration.FriendsOnly.Value && !player.field_Private_APIUser_0.isFriend))
+                        continue;
+
+                    Animator animator = player.prop_VRCPlayer_0?.field_Internal_Animator_0;
+
+                    if (animator == null || !animator.isHuman)
+                        continue;
+
+                    Vector3 leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand)?.position ?? Vector3.positiveInfinity;
+                    Vector3 rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand)?.position ?? Vector3.positiveInfinity;
+                    Vector3 leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot)?.position ?? Vector3.positiveInfinity;
+                    Vector3 rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot)?.position ?? Vector3.positiveInfinity;
+
+                    foreach (PiShockDevice device in Devices)
+                    {
+                        if (device.NextValidShock >= Time.realtimeSinceStartup)
+                            continue;
+
+                        foreach (PiShockPoint point in device.Points)
+                        {
+                            if (point.Object == null || !point.Object.activeInHierarchy)
+                                continue;
+
+                            List<float> distances = new List<float>();
+
+                            distances.Add(Vector3.Distance(leftHand, point.Object?.transform.position ?? Vector3.positiveInfinity));
+                            distances.Add(Vector3.Distance(rightHand, point.Object?.transform.position ?? Vector3.positiveInfinity));
+
+                            if (Configuration.FeetInteraction.Value)
+                            {
+                                distances.Add(Vector3.Distance(leftFoot, point.Object?.transform.position ?? Vector3.positiveInfinity));
+                                distances.Add(Vector3.Distance(rightFoot, point.Object?.transform.position ?? Vector3.positiveInfinity));
+                            }
+
+                            float activationDistance = point.Radius ?? Configuration.DefaultRadius.Value;
+
+                            if (distances.Any(distance => distance <= activationDistance))
+                            {
+                                device.NextValidShock = Time.realtimeSinceStartup + (point.Duration ?? Configuration.DefaultDuration.Value);
+                                TriggerShock(device, point, player);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void TriggerShock(PiShockDevice device, PiShockPoint point, Player player)
+        {
+            if (Configuration.UseLocalServer.Value)
+                SendLocalRequest(device, point);
+            else
+                SendAPIRequest(device, point, player?.field_Private_APIUser_0?.displayName ?? "Invalid Player");
+
+            if (Configuration.UseAvatarParameters.Value)
+            {
+                ParameterController.SetParameter("PiShock_" + device.Name, true);
+                PiShockVRCMod.Run(() => ParameterController.SetParameter("PiShock_" + device.Name, false), point.Duration);
             }
         }
 
@@ -224,17 +258,26 @@ namespace PiShockVRC.Core
 
                 if (device != null)
                 {
-                    PiShockPoint.PointType type = (PiShockPoint.PointType)Enum.Parse(typeof(PiShockPoint.PointType), transform.GetChild(1).name.Split(':')[1].Trim());
-                    int strength = int.Parse(transform.GetChild(2).name.Split(':')[1].Trim());
-                    int duration = int.Parse(transform.GetChild(3).name.Split(':')[1].Trim());
-                    float radius = -1;
+                    string rawType = transform.GetChild(1).name.Split(':')[1].Trim();
+                    PiShockPoint.PointType? type = rawType.ToLower().Equals("default") ? null : (PiShockPoint.PointType)Enum.Parse(typeof(PiShockPoint.PointType), rawType);
 
+                    string rawStrength = transform.GetChild(2).name.Split(':')[1].Trim();
+                    int? strength = rawStrength.ToLower().Equals("default") ? null : int.Parse(rawStrength);
+
+                    string rawDuration = transform.GetChild(3).name.Split(':')[1].Trim();
+                    int? duration = rawDuration.ToLower().Equals("default") ? null : int.Parse(rawDuration);
+
+                    int? radius = null;
                     if (transform.childCount >= 5)
-                        radius = float.Parse(transform.GetChild(4).name.Split(':')[1].Trim());
+                    {
+                        string rawRadius = transform.GetChild(4).name.Split(':')[1].Trim();
+                        radius = rawRadius.ToLower().Equals("default") ? null : int.Parse(rawRadius);
+                    }
 
-                    device.Points.Add(new PiShockPoint() { Object = transform.parent.gameObject, Type = type, Strength = strength, Duration = duration, Radius = radius });
+                    VRCContactReceiver contactReceiver = transform.parent.GetComponent<VRCContactReceiver>();
+                    device.Points.Add(new PiShockPoint() { Object = transform.parent.gameObject, ContactReceiver = contactReceiver, Type = type, Strength = strength, Duration = duration, Radius = radius });
 
-                    PiShockVRCMod.Logger.Msg("Found PiShockPoint [Device=" + identifier + "/Type=" + type.ToString() + "/Strength=" + strength + "/Duration=" + duration + "/Radius=" + radius + "]");
+                    PiShockVRCMod.Logger.Msg("Found PiShockPoint [DeviceName=" + identifier + "/Type=" + (type == null ? "Default" : type.ToString()) + "/Strength=" + (strength == null ? "Default" : strength) + "/Duration=" + (duration == null ? "Default" : duration) + "/Radius=" + (radius == null ? "Default" : radius) + "]");
                 }
             }
             else

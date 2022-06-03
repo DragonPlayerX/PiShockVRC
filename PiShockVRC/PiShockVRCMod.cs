@@ -9,6 +9,7 @@ using PiShockVRC.Config;
 
 [assembly: MelonInfo(typeof(PiShockVRCMod), "PiShockVRC", "1.1.2", "DragonPlayer", "https://github.com/DragonPlayerX/PiShockVRC")]
 [assembly: MelonGame("VRChat", "VRChat")]
+[assembly: MelonOptionalDependencies("UIExpansionKit")]
 
 namespace PiShockVRC
 {
@@ -29,10 +30,7 @@ namespace PiShockVRC
             MelonCoroutines.Start(Init());
         }
 
-        public override void OnUpdate()
-        {
-            AvatarManager.Update();
-        }
+        public override void OnUpdate() => AvatarManager.Update();
 
         private IEnumerator Init()
         {

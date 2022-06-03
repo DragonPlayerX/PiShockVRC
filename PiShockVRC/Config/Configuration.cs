@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using MelonLoader;
 using MelonLoader.TinyJSON;
 
@@ -26,14 +27,18 @@ namespace PiShockVRC.Config
         public static MelonPreferences_Entry<bool> FeetInteraction;
         public static MelonPreferences_Entry<bool> FriendsOnly;
         public static MelonPreferences_Entry<bool> UseAvatarParameters;
+        public static MelonPreferences_Entry<bool> UseAvatarDynamics;
+        public static MelonPreferences_Entry<string> DefaultType;
+        public static MelonPreferences_Entry<int> DefaultStrength;
+        public static MelonPreferences_Entry<int> DefaultDuration;
         public static MelonPreferences_Entry<float> DefaultRadius;
         public static MelonPreferences_Entry<bool> LogApiRequests;
 
         public static Dictionary<string, PiShockDevice.LinkData> DeviceLinks = new Dictionary<string, PiShockDevice.LinkData>();
+        public static PiShockPoint.PointType ParsedDefaultType;
+        public static bool HasChanged;
 
         private static FileSystemWatcher fileWatcher;
-
-        public static bool HasChanged;
 
         public static void Init()
         {
@@ -47,8 +52,24 @@ namespace PiShockVRC.Config
             FeetInteraction = CreateEntry("FeetInteraction", false, "Feet Interaction");
             FriendsOnly = CreateEntry("FriendsOnly", false, "Friends Only");
             UseAvatarParameters = CreateEntry("UseAvatarParameters", false, "Use Avatar Parameters");
-            DefaultRadius = CreateEntry("DefaultRadius", 0.15f, "Default Radius");
+            UseAvatarDynamics = CreateEntry("UseAvatarDynamics", false, "Use Avatar Dynamics");
+            DefaultType = CreateEntry("DefaultType", nameof(PiShockPoint.PointType.Shock), "Default Type");
+            DefaultStrength = CreateEntry("DefaultStrength", 25, "Default Strength");
+            DefaultDuration = CreateEntry("DefaultDuration", 1, "Default Duration");
+            DefaultRadius = CreateEntry("DefaultRadius", 0.25f, "Default Radius");
             LogApiRequests = CreateEntry("LogApiRequests", false, "Log API Requests");
+
+            Action<string> parseTypeAction = new Action<string>(value =>
+            {
+                if (Enum.TryParse(value, true, out PiShockPoint.PointType alignment))
+                    ParsedDefaultType = alignment;
+            });
+
+            DefaultType.OnValueChanged += new Action<string, string>((oldValue, newValue) => parseTypeAction.Invoke(newValue));
+            parseTypeAction.Invoke(DefaultType.Value);
+
+            if (MelonHandler.Mods.Any(mod => mod.Info.Name.Equals("UI Expansion Kit")))
+                UIXIntegration.InitUIX();
 
             if (!Directory.Exists(DataDirectory))
                 Directory.CreateDirectory(DataDirectory);
@@ -94,6 +115,20 @@ namespace PiShockVRC.Config
             PiShockVRCMod.Logger.Msg("Loaded " + DeviceLinks.Count + " devices.");
             PiShockVRCMod.Logger.Msg("Found " + invalidCodes + " unassigned share codes.");
             PiShockVRCMod.Logger.Msg("Found " + invalidIds + " unassigned device ids.");
+        }
+
+        internal class UIXIntegration
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void InitUIX()
+            {
+                UIExpansionKit.API.ExpansionKitApi.RegisterSettingAsStringEnum(Category.Identifier, DefaultType.Identifier, new List<(string, string)>()
+                {
+                    (nameof(PiShockPoint.PointType.Shock), "Shock"),
+                    (nameof(PiShockPoint.PointType.Vibrate), "Vibrate"),
+                    (nameof(PiShockPoint.PointType.Beep), "Beep")
+                });
+            }
         }
     }
 }
