@@ -219,7 +219,7 @@ namespace PiShockVRC.Core
             if (Configuration.UseAvatarParameters.Value)
             {
                 ParameterController.SetParameter("PiShock_" + device.Name, true);
-                PiShockVRCMod.Run(() => ParameterController.SetParameter("PiShock_" + device.Name, false), point.Duration);
+                PiShockVRCMod.Run(() => ParameterController.SetParameter("PiShock_" + device.Name, false), point.Duration ?? Configuration.DefaultDuration.Value);
             }
         }
 
