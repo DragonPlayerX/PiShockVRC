@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
@@ -261,16 +262,16 @@ namespace PiShockVRC.Core
                     PiShockPoint.PointType? type = rawType.ToLower().Equals("default") ? null : (PiShockPoint.PointType)Enum.Parse(typeof(PiShockPoint.PointType), rawType);
 
                     string rawStrength = transform.GetChild(2).name.Split(':')[1].Trim();
-                    int? strength = rawStrength.ToLower().Equals("default") ? null : int.Parse(rawStrength);
+                    int? strength = rawStrength.ToLower().Equals("default") ? null : int.Parse(rawStrength, CultureInfo.InvariantCulture);
 
                     string rawDuration = transform.GetChild(3).name.Split(':')[1].Trim();
-                    int? duration = rawDuration.ToLower().Equals("default") ? null : int.Parse(rawDuration);
+                    int? duration = rawDuration.ToLower().Equals("default") ? null : int.Parse(rawDuration, CultureInfo.InvariantCulture);
 
-                    int? radius = null;
+                    float? radius = null;
                     if (transform.childCount >= 5)
                     {
                         string rawRadius = transform.GetChild(4).name.Split(':')[1].Trim();
-                        radius = rawRadius.ToLower().Equals("default") ? null : int.Parse(rawRadius);
+                        radius = rawRadius.ToLower().Equals("default") ? null : float.Parse(rawRadius, CultureInfo.InvariantCulture);
                     }
 
                     VRCContactReceiver contactReceiver = transform.parent.GetComponent<VRCContactReceiver>();
